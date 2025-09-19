@@ -364,11 +364,14 @@ const uint8_t font_5x8[] PROGMEM = {
 	0x0C, 0x50, 0x50, 0x50, 0x3C,
 	
 	// z (122)
-	0x44, 0x64, 0x54, 0x4C, 0x44
+	0x44, 0x64, 0x54, 0x4C, 0x44,
+	
+	// { (123)
+	0x18, 0x18, 0x7e, 0x3c, 0x18
 };
 void OLED_DrawChar(uint8_t page, uint8_t col, char c) {
 	// Verificar rango del carácter
-	if (c < 32 || c > 122) c = '?';
+	if (c < 32 || c > 123) c = '?';
 	
 	OLED_SetPosition(page, col);
 	

@@ -16,7 +16,7 @@ void OLED_SetPosition(uint8_t page, uint8_t column);
 void OLED_Clear(void);
 void OLED_DrawChar(uint8_t page, uint8_t col, char c);
 void OLED_Print(uint8_t page, uint8_t col, const char *str);
-void Display(int Screen);
+
 
 
 
