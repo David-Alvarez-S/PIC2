@@ -1,144 +1,134 @@
+#define F_CPU 16000000UL
+
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/pgmspace.h>
 #include <stdbool.h>
 
-#include "I2C.h" 
+#include "Millis.h"
+#include "I2C.h"
 #include "OLED.h"
+#include "Input.h"
 
-#define DEBOUNCE_DELAY 500
-#define F_CPU 16000000UL // Frecuencia del Atmega328p (16MHz)
-
-int Temp, State, Mode, TimeLeft, Nivel, Screen_Num;
-int Intervalo = 600; //Medido en minutos
+// Variables globales
+int Temp, State, Mode, TimeLeft, Nivel;
 int Config_Option = 1;
-Screen_Num = 1;
+int Screen_Num = 1;
+uint32_t last_input_time = 0;
 
-void Press_Button();
-void Display();
-void Config_Options();
+// Prototipos de funciones
+void Display(int screen_num);
+void Config_Options(void);
+void Inputs(int Option);
 
 int main(void) {
-	
-	DDRD = 0x00;
-	PORTD |= 0b00111110;
-	
-	State = 1;
-	Mode = 1;
-	TimeLeft = Intervalo;
-	
-	
-	I2C_Init();
-	OLED_Init();
-	OLED_Clear();
-	
-	Display(Screen_Num);
-	
-	while (1) {
-		Press_Button();
-	}
-	
-	return 0;
+    Input_Init();
+    I2C_Init();
+    OLED_Init();
+    millis_init();
+    sei();
+    
+    OLED_Clear();
+    Display(Screen_Num);
+    
+    while (1) {
+        int button = Input_Button();
+        if (button != 0) {
+            Inputs(button);
+        }
+    }
+    
+    return 0;
 }
 
-
-void Display(){
-	OLED_Clear();
-	switch (Screen_Num){
-		case 1:
-			OLED_Print(0, 45, "INICIO");
-			OLED_Print(3, 0, " Estado:");
-			OLED_Print(4, 0, " Modo:");
-			OLED_Print(5, 0, " Proximo spray:");
-			OLED_Print(6, 0, " Nivel:");
-		break;
-		case 2:
-			OLED_Print(0, 20, "INFO AMBIENTAL");
-			OLED_Print(3, 0, " Temperatura:");
-			OLED_Print(4, 0, " Humedad:");
-			OLED_Print(5, 0, " Movimiento:");
-		break;
-		case 3:
-			OLED_Print(0, 20, "CONFIGURACION");
-			OLED_Print(3, 0, " Modo:");
-			OLED_Print(4, 0, " Intervalo:");
-			OLED_Print(5, 0, " Bluetooth:");
-		break;
-	}
-	
+void Display(int screen_num) {
+    OLED_Clear();
+    
+    switch (screen_num) {
+        case 1:
+            OLED_Print(0, 45, "INICIO");
+            OLED_Print(3, 0, "  Estado:");
+            OLED_Print(4, 0, "  Modo:");
+            OLED_Print(5, 0, "  Siguiente:");
+            OLED_Print(6, 0, "  Nivel:");
+            break;
+            
+        case 2:
+            OLED_Print(0, 20, "INFO AMBIENTAL");
+            OLED_Print(3, 0, "  Temperatura:");
+            OLED_Print(4, 0, "  Humedad:");
+            OLED_Print(5, 0, "  Movimiento:");
+            break;
+            
+        case 3:
+            Config_Options();
+            break;
+    }
 }
 
-void Press_Button(){
-	bool PresionadoI = (PIND & (1 << PD2));
-	bool PresionadoD = (PIND & (1 << PD3));
-	
-	bool PresionadoA = (PIND & (1 << PD4));
-	bool PresionadoAb = (PIND & (1 << PD5));
-	
-	bool PresionadoE = (PIND & (1 << PD6));
-	
-	if (!PresionadoD){
-		Screen_Num++;
-		_delay_ms(DEBOUNCE_DELAY);
-		if(Screen_Num <= 0){
-			Screen_Num = 3;
-		}else if (Screen_Num >= 4){
-			Screen_Num = 1;
-		}
-		Display(Screen_Num);
-	}
-	if (!PresionadoI){
-		Screen_Num--;
-		_delay_ms(DEBOUNCE_DELAY);
-		if(Screen_Num <= 0){
-			Screen_Num = 3;
-			}else if (Screen_Num >= 4){
-			Screen_Num = 1;
-			}
-		Display(Screen_Num);
-	}
-	
-	if (!PresionadoA){
-		_delay_ms(DEBOUNCE_DELAY);
-		if (Screen_Num == 3){
-			Config_Option ++;
-			if (Config_Option >= 4){
-				Config_Option = 1;
-			}
-		}
-		Config_Options();
-
-	}
-	
-	if (!PresionadoAb){
-		_delay_ms(DEBOUNCE_DELAY);
-		Screen_Num--;
-		_delay_ms(DEBOUNCE_DELAY);
-		if(Screen_Num <= 0){
-			Screen_Num = 3;
-			}else if (Screen_Num >= 4){
-			Screen_Num = 1;
-		}
-		Config_Options();
-	
-	}
+void Config_Options(void) {
+    OLED_Clear();
+    OLED_Print(0, 20, "CONFIGURACION");
+    
+    switch (Config_Option) {
+        case 1:
+            OLED_Print(3, 0, "- Modo:");
+            OLED_Print(4, 0, "  Intervalo:");
+            OLED_Print(5, 0, "  Bluetooth:");
+            break;
+            
+        case 2:
+            OLED_Print(3, 0, "  Modo:");
+            OLED_Print(4, 0, "- Intervalo:");
+            OLED_Print(5, 0, "  Bluetooth:");
+            break;
+            
+        case 3:
+            OLED_Print(3, 0, "  Modo:");
+            OLED_Print(4, 0, "  Intervalo:");
+            OLED_Print(5, 0, "- Bluetooth:");
+            break;
+    }
 }
 
-void Config_Options(){
-	OLED_Print(0, 20, "CONFIGURACION");
-	if (Config_Option == 1){
-		OLED_Print(3, 0, "{Modo:");
-		OLED_Print(4, 0, " Intervalo:");
-		OLED_Print(5, 0, " Bluetooth:");
-	}else if (
-		Config_Option == 2){
-		OLED_Print(3, 0, " Modo:");
-		OLED_Print(4, 0, "{Intervalo:");
-		OLED_Print(5, 0, " Bluetooth:");
-	}else if (
-		Config_Option == 3){
-		OLED_Print(3, 0, " Modo:");
-		OLED_Print(4, 0, " Intervalo:");
-		OLED_Print(5, 0, "{Bluetooth:");
-	}
+void Inputs(int Option) {
+    // Debouncing - prevenir múltiples pulsaciones rápidas
+    if (millis() - last_input_time < 300) {
+        return;
+    }
+    last_input_time = millis();
+    
+    switch(Option) {
+        case 1: // Izquierda - Pantalla anterior
+            Screen_Num--;
+            if (Screen_Num < 1) Screen_Num = 3;
+            Display(Screen_Num);
+            break;
+            
+        case 2: // Derecha - Siguiente pantalla
+            Screen_Num++;
+            if (Screen_Num > 3) Screen_Num = 1;
+            Display(Screen_Num);
+            break;
+            
+        case 3: // Arriba - Opción anterior en configuración
+            if (Screen_Num == 3) {
+                Config_Option--;
+                if (Config_Option < 1) Config_Option = 3;
+                Config_Options();
+            }
+            break;
+            
+        case 4: // Abajo - Siguiente opción en configuración
+            if (Screen_Num == 3) {
+                Config_Option++;
+                if (Config_Option > 3) Config_Option = 1;
+                Config_Options();
+            }
+            break;
+            
+        case 5: // Enter
+            // Acción de enter
+            break;
+    }
 }

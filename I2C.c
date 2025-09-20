@@ -4,12 +4,14 @@
  * Created: 19/9/2025 0:56:12
  *  Author: David
  */ 
+#define F_CPU 16000000UL
+
 #include "I2C.h" 
 #include <avr/io.h>
 #include <stdint.h> 
 
 #define F_CPU 16000000UL // Frecuencia del Atmega328p (16MHz)
-#define F_SCL 400000UL  // Frecuencia I2C (100kHz)
+#define F_SCL 500000UL  // Frecuencia I2C (100kHz)
 
 
 void I2C_Init(void) {						// Configurar velocidad del bus I2C
