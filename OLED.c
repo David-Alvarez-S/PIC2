@@ -4,6 +4,7 @@
  * Created: 19/9/2025 0:54:29
  *  Author: David
  */ 
+#define F_CPU 16000000UL
 
 #include <avr/io.h>
 #include <util/delay.h>
@@ -133,7 +134,7 @@ const uint8_t font_5x8[] PROGMEM = {
 	0x00, 0x50, 0x30, 0x00, 0x00,
 	
 	// - (45)
-	0x08, 0x08, 0x08, 0x08, 0x08,
+	0x18, 0x18, 0x7e, 0x3c, 0x18,
 	
 	// . (46)
 	0x00, 0x60, 0x60, 0x00, 0x00,
@@ -366,6 +367,7 @@ const uint8_t font_5x8[] PROGMEM = {
 	// z (122)
 	0x44, 0x64, 0x54, 0x4C, 0x44
 };
+
 void OLED_DrawChar(uint8_t page, uint8_t col, char c) {
 	// Verificar rango del carácter
 	if (c < 32 || c > 122) c = '?';
